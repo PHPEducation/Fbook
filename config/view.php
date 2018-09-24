@@ -37,6 +37,7 @@ return [
         'best_sharing_book' => 5,
         'top_book' => 6,
         'latest_book' => 12,
+        'review' => 3,
     ],
 
     'random_numb' => [

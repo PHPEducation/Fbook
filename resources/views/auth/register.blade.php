@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 @extends('auth.layouts.app')
+=======
+@extends('layouts.app')
+>>>>>>> fix2
 
 @section('content')
 <div class="container">
@@ -61,6 +65,7 @@
                             </div>
                         </div>
 
+<<<<<<< HEAD
                         <div class="form-group row">
                             <label for="position" class="col-md-4 col-form-label text-md-right">{{ __('Position') }}</label>
 
@@ -103,6 +108,8 @@
                             </div>
                         </div>
 
+=======
+>>>>>>> fix2
                         <div class="form-group row mb-0">
                             <div class="col-md-6 offset-md-4">
                                 <button type="submit" class="btn btn-primary">

@@ -8,6 +8,8 @@ use App\Repositories\Contracts\BookCategoryRepository;
 use App\Repositories\Contracts\BookRepository;
 use App\Repositories\Contracts\MediaRepository;
 use App\Repositories\Contracts\CategoryRepository;
+use App\Repositories\Contracts\ReviewBookRepository;
+use Auth;
 
 class BookController extends Controller
 {
@@ -19,6 +21,8 @@ class BookController extends Controller
 
     protected $media;
 
+    protected $review;
+
     protected $with = [
         'medias',
         'categories',
@@ -26,12 +30,17 @@ class BookController extends Controller
         'reviews',
     ];
 
-    public function __construct(BookRepository $book, CategoryRepository $category, BookCategoryRepository $bookCategory, MediaRepository $media)
-    {
+    public function __construct(BookRepository $book,
+    CategoryRepository $category,
+    BookCategoryRepository $bookCategory,
+    MediaRepository $media,
+    ReviewBookRepository $review
+    ) {
         $this->book = $book;
         $this->category = $category;
         $this->bookCategory = $bookCategory;
         $this->media = $media;
+        $this->review = $review;
     }
 
     /**
@@ -77,14 +86,32 @@ class BookController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show($slug)
     {
-        $id = last(explode('-', $id));
+        $id = last(explode('-', $slug));
         $book = $this->book->find($id, $this->with);
-        $relatedBookIds = $this->bookCategory->getBooks($book->categories->pluck('id'));
-        $relatedBooks = $this->book->getData(['medias'], $relatedBookIds);
-        
-        return view('book.book_detail', compact('book', 'relatedBooks'));
+
+        if ($slug == $book->slug . '-' . $book->id) {
+            $relatedBookIds = $this->bookCategory->getBooks($book->categories->pluck('id'));
+            $relatedBooks = $this->book->getData(['medias'], $relatedBookIds);
+
+            $data['book_id'] = $book->id;
+            $reviews = $this->review->show($data);
+
+            $flag = true;
+            if (Auth::check()) {
+                $isReview = $this->review->checkReview($data);
+                if ($isReview->count() > 0) {
+                    $flag = false;
+                }
+            } else {
+                $flag = false;
+            }
+
+            return view('book.book_detail', compact('book', 'relatedBooks', 'flag', 'reviews'));
+        }
+
+        return view('error');
     }
 
     /**

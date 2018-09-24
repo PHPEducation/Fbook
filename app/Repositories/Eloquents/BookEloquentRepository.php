@@ -66,7 +66,7 @@ class BookEloquentRepository extends AbstractEloquentRepository implements BookR
         if (count($books) > config('view.taking_numb.latest_book')) {
             $books = $books->take(config('view.taking_numb.latest_book'));
         }
-        
+
         return $books;
     }
 
@@ -87,7 +87,7 @@ class BookEloquentRepository extends AbstractEloquentRepository implements BookR
 
             return $books;
         }
-        
+
         return null;
     }
 
@@ -138,11 +138,11 @@ class BookEloquentRepository extends AbstractEloquentRepository implements BookR
                     ->whereIn('id', $ids)
                     ->get();
                 $data = compact('books', 'user');
-                
+
                 return $data;
             }
         }
-        
+
         return null;
     }
 
