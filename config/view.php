@@ -35,6 +35,7 @@ return [
         'book_profile' => 12,
         'follow_user' => 9,
         'book_request' => 5,
+        'review' => 3,
     ],
 
     'taking_numb' => [
