@@ -46,9 +46,4 @@ Config API_CLIENT_SECRET and API_CLIENT_id in .env
 - php artisan db:seed --database=mysql_test
 
 **Run**
-```
 $ ./vendor/bin/phpunit
-```
- - Install yarn:<br/>
-```npm install -g yarn```<br/>
-```yarn install```

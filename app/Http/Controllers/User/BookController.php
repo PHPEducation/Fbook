@@ -13,6 +13,8 @@ use App\Repositories\Contracts\ReviewBookRepository;
 use App\Repositories\Contracts\OwnerRepository;
 use App\Repositories\Contracts\OfficeRepository;
 use App\Repositories\Contracts\BookUserRepository;
+use App\Repositories\Contracts\ReputationRepository;
+use App\Repositories\Contracts\UserRepository;
 use Auth;
 use App\Repositories\Contracts\BookmetaRepository;
 use App\Repositories\Contracts\NotificationRepository;
@@ -40,6 +42,10 @@ class BookController extends Controller
 
     protected $notification;
 
+    protected $reputation;
+
+    protected $user;
+
     protected $with = [
         'medias',
         'categories',
@@ -57,7 +63,9 @@ class BookController extends Controller
         OfficeRepository $office,
         BookmetaRepository $bookmeta,
         BookUserRepository $bookUser,
-        NotificationRepository $notification
+        NotificationRepository $notification,
+        ReputationRepository $reputation,
+        UserRepository $user
     ) {
         $this->book = $book;
         $this->category = $category;
@@ -69,6 +77,8 @@ class BookController extends Controller
         $this->bookmeta = $bookmeta;
         $this->bookUser = $bookUser;
         $this->notification = $notification;
+        $this->user = $user;
+        $this->reputation = $reputation;
         $this->middleware('auth', ['only' => ['create', 'store', 'edit', 'update']]);
         $this->middleware('viewed.book', ['only' => ['create']]);
     }
@@ -125,38 +135,41 @@ class BookController extends Controller
             $slug = str_slug($request->title);
             $request->merge(['slug' => $slug]);
             $book = $this->book->store($request->all());
-            $request->merge(['book_id' => $book->id]);
-            //save bookmeta
-            $this->bookmeta->store($request->all());
-            //save category
-            if ($request->has('category')) {
-                $this->bookCategory->store($request->all());
-            }
-            //create image
-            $this->media->store($request->all());
 
-            $data = [
-                'user_id' => Auth::user()->id,
-                'book_id' => $book->id,
-            ];
-            $this->owner->store($data);
-            if ($followers) {
-                foreach ($followers as $follower) {
-                    $info = [
-                        'send_id' => Auth::id(),
-                        'receive_id' => $follower,
-                        'target_type' => config('model.target_type.book'),
-                        'target_id' => $book->id,
-                        'viewed' => config('model.viewed.false'),
-                    ];
-                    $this->notification->store($info);
+            if ($book) {
+                $request->merge(['book_id' => $book->id]);
+                //save bookmeta
+                $this->bookmeta->store($request->all());
+                //save category
+                if ($request->has('category')) {
+                    $this->bookCategory->store($request->all());
                 }
-            }
-            \Cache::put('latestBook', $this->book->setCache(['created_at', 'desc']), 1440);
-            
-            Session::flash('success', trans('settings.success.store'));
+                //create image
+                $this->media->store($request->all());
 
-            return redirect()->route('books.show', $book->slug . '-' . $book->id);
+                $data = [
+                    'user_id' => Auth::user()->id,
+                    'book_id' => $book->id,
+                ];
+                $this->owner->store($data);
+                if ($followers) {
+                    foreach ($followers as $follower) {
+                        $info = [
+                            'send_id' => Auth::id(),
+                            'receive_id' => $follower,
+                            'target_type' => config('model.target_type.book'),
+                            'target_id' => $book->id,
+                            'viewed' => config('model.viewed.false'),
+                        ];
+                        $this->notification->store($info);
+                    }
+                }
+                $this->addPoinToUser(Auth::id());
+                \Cache::put('latestBook', $this->book->setCache(['created_at', 'desc']), 1440);
+                Session::flash('success', trans('settings.success.store'));
+
+                return redirect()->route('books.show', $book->slug . '-' . $book->id);
+            }
         } catch (Exception $e) {
             Session::flash('unsuccess', trans('settings.unsuccess.error', ['messages' => $e->getMessage()]));
 
@@ -164,6 +177,22 @@ class BookController extends Controller
         }
     }
 
+    public function addPoinToUser($userId)
+    {
+        $record = $this->reputation->store([
+            'point' => config('model.reputation.share_book'),
+            'user_id' => $userId,
+            'target_type' => config('model.target_type.user'),
+            'target_id' => Auth::id(),
+        ]);
+        $point = $this->user->find($userId)->reputation_point + $record->point;
+        $this->user->update(
+            $userId,
+            [
+                'reputation_point' => $point,
+            ]
+        );
+    }
     /**
      * Display the specified resource.
      *
