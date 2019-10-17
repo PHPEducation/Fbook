@@ -9,6 +9,7 @@ use App\Repositories\Contracts\BookRepository;
 use App\Repositories\Contracts\VoteRepository;
 use App\Repositories\Contracts\NotificationRepository;
 use App\Repositories\Contracts\BookmetaRepository;
+use App\Repositories\Contracts\ReputationRepository;
 use App\Eloquent\Vote;
 use Auth;
 use Exception;
@@ -22,12 +23,15 @@ class ReviewBookController extends Controller
 
     protected $bookmeta;
 
+    protected $reputation;
+
     public function __construct(
         ReviewBookRepository $review,
         BookRepository $book,
         VoteRepository $vote,
         NotificationRepository $notification,
-        BookmetaRepository $bookmeta
+        BookmetaRepository $bookmeta,
+        ReputationRepository $reputation,
     ) {
         $this->middleware('auth');
         $this->review = $review;
@@ -35,6 +39,7 @@ class ReviewBookController extends Controller
         $this->vote = $vote;
         $this->notification = $notification;
         $this->bookmeta = $bookmeta;
+        $this->reputation = $reputation;
     }
 
     public function create($slug)
@@ -88,6 +93,7 @@ class ReviewBookController extends Controller
                 }
 
                 $this->bookmeta->updateCountReview($id);
+                $this->addPoinToUser(Auth::id());
                 Session::flash('success', trans('settings.success.store'));
 
                 return redirect()->route('books.show', $slug);
@@ -191,5 +197,22 @@ class ReviewBookController extends Controller
         }
 
         return view('book.show_review', compact('review', 'book', 'voted', 'flag'));
+    }
+
+    public function addPoinToUser($userId)
+    {
+        $record = $this->reputation->store([
+            'point' => config('model.reputation.share_book'),
+            'user_id' => $userId,
+            'target_type' => config('model.target_type.user'),
+            'target_id' => Auth::id(),
+        ]);
+        $point = $this->user->find($userId)->reputation_point + $record->point;
+        $this->user->update(
+            $userId,
+            [
+                'reputation_point' => $point,
+            ]
+        );
     }
 }
