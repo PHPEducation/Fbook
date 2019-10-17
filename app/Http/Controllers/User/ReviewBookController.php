@@ -192,4 +192,18 @@ class ReviewBookController extends Controller
 
         return view('book.show_review', compact('review', 'book', 'voted', 'flag'));
     }
+
+    public function removeReputation($userId)
+    {
+        $this->reputation->destroy($userId);
+
+        $point = $this->user->find($userId)->reputation_point - config('model.reputation.review');
+        $this->user->update(
+            $userId,
+            [
+                'reputation_point' => $point,
+            ]
+        );
+    }
+    }
 }

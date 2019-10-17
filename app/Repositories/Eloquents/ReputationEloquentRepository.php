@@ -16,4 +16,20 @@ class ReputationEloquentRepository extends AbstractEloquentRepository implements
     {
         return $this->model()->create($data);
     }
+
+    public function destroy($userId)
+    {
+        $record = $this->find($userId);
+
+        return $this->model()->destroy($record);
+    }
+
+    public function find($userId)
+    {
+        return $this->model()
+            ->where('user_id', $userId)
+            ->where('target_type', config('model.target_type.user'))
+            ->where('target_id', Auth::id())
+            ->first();
+    }
 }
